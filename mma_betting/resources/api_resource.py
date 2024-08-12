@@ -351,3 +351,20 @@ class FightOddsAPIResource(ConfigurableResource):
         '''
         variables = {'outcomeId': outcome_id}
         return self.fetch_data(query, variables)
+    
+class UFCStatsAPIResource(ConfigurableResource):
+
+    @retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=60))
+    def fetch_data(self, url) -> dict:
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.json()
+    
+    def fetch_event(self, event_id) -> dict:
+        url = f'https://d29dxerjsp82wz.cloudfront.net/api/v3/event/live/{event_id}.json'
+        return self.fetch_data(url)
+    
+    def fetch_fight(self, fight_id) -> dict:
+        url = f'https://d29dxerjsp82wz.cloudfront.net/api/v3/fight/live/{fight_id}.json'
+        return self.fetch_data(url)
+    
