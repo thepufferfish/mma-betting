@@ -8,7 +8,8 @@ setup(
         "dagster-cloud",
         "scrapy",
         "scrapy-user-agents",
-        "scrapy-rotating_proxies"
+        "scrapy-rotating-proxies",
+        "tenacity"
     ],
     extras_require={"dev": ["dagster-webserver", "pytest"]},
 )
