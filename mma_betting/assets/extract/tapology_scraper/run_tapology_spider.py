@@ -1,6 +1,6 @@
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
-from .spiders.tapology_spider import TapologySpider
+from mma_betting.assets.extract.tapology_scraper.spiders.tapology_spider import TapologySpider
 
 tapology_settings = get_project_settings()
 
