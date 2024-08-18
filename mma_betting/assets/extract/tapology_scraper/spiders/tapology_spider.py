@@ -1,5 +1,7 @@
 import re
 from scrapy.spiders import SitemapSpider
+from pymongo import MongoClient
+from datetime import datetime
 from mma_betting.assets.extract.tapology_scraper.items import EventItem, FightItem
 
 class TapologySpider(SitemapSpider):
@@ -10,6 +12,43 @@ class TapologySpider(SitemapSpider):
         ('/events/', 'parse_event_page'),
         ('/fighters/', 'parse_fighter_page')
     ]
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        spider = super(TapologySpider, cls).from_crawler(crawler, *args, **kwargs)
+        spider.mongo_uri = crawler.settings.get('MONGO_URI')
+        spider.mongo_db = crawler.settings.get('MONGO_DATABASE')
+        spider.setup_mongo()
+        return spider
+
+    def setup_mongo(self):
+        self.client = MongoClient(self.mongo_uri)
+        self.db = self.client[self.mongo_db]
+        self.collection = self.db['tapology_crawled_pages']
+
+    def sitemap_filter(self, entries):
+        for entry in entries:
+            url = entry['loc']
+            lastmod = entry.get('lastmod')
+
+            if lastmod:
+                lastmod_date = datetime.strptime(lastmod, '%Y-%m-%d')
+                crawled_entry = self.collection.find_one({'url': url})
+                now_date = datetime.utcnow()
+
+                if crawled_entry:
+                    if crawled_entry['lastmod'] < lastmod_date:
+                        yield entry
+                        self.collection.update_one({'url': url}, {'$set': {'lastmod': lastmod_date, 'last_crawled': now_date}})
+                    else:
+                        self.logger.debug(f'Skipping unchanged page: {url}')
+                else:
+                    yield entry
+                    self.collection.insert_one({'url': url, 'lastmod': lastmod_date, 'last_crawled': now_date})
+            else:
+                # just going to follow but not record if no lastmod
+                # these are often just links to sitemap pages
+                yield entry
 
     def parse_event_page(self, response):
         yield EventItem(
@@ -50,6 +89,9 @@ class TapologySpider(SitemapSpider):
                 fighters=sorted([fighter, opponent], key=lambda x: x['fighter_id'])
             )
     
+    def close(self, reason):
+        self.client.close()
+
     def get_fighter_id_from_url(self, url):
         if url:
             m = re.search(r'(?<=fightcenter/fighters/)[0-9]+(?=-)', url)
