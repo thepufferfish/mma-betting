@@ -41,7 +41,7 @@ class TapologySpider(SitemapSpider):
                 'result': 'loss' if result == 'win' else 'win'
             }
             yield FightItem(
-                event_id=match.xpath('@data-bout-id').get(),
+                fight_id=match.xpath('@data-bout-id').get(),
                 event_id=self.get_event_id_from_url(match.xpath('//a[@title="Event Page"]/@href').get()),
                 division=match.xpath('@data-division').get(),
                 sport=match.xpath('@data-sport').get(),
