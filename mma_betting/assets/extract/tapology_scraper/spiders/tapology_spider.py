@@ -36,7 +36,7 @@ class TapologySpider(SitemapSpider):
                 self.logger.debug(f'Weird result: {result} in match against {opponent_name}')
                 continue
             opponent = {
-                'id': self.get_fighter_id_from_url(opponent_href),
+                'fighter_id': self.get_fighter_id_from_url(opponent_href),
                 'name': opponent_name,
                 'result': 'loss' if result == 'win' else 'win'
             }
@@ -47,7 +47,7 @@ class TapologySpider(SitemapSpider):
                 sport=match.xpath('@data-sport').get(),
                 duration=self.get_fight_detail(match, 'Duration'),
                 weightclass=self.get_fight_detail(match, 'Weight'),
-                fighters=sorted([fighter, opponent], key=lambda x: x['id'])
+                fighters=sorted([fighter, opponent], key=lambda x: x['fighter_id'])
             )
     
     def get_fighter_id_from_url(self, url):
