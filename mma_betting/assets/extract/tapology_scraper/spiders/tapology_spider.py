@@ -13,7 +13,7 @@ class TapologySpider(SitemapSpider):
 
     def parse_event_page(self, response):
         yield EventItem(
-            id=self.get_event_id_from_url(response.url),
+            event_id=self.get_event_id_from_url(response.url),
             datetime=self.get_event_detail(response, 'Date/Time'),
             location=self.get_event_detail(response, 'Location'),
             venue=self.get_event_detail(response, 'Venue'),
@@ -23,7 +23,7 @@ class TapologySpider(SitemapSpider):
     def parse_fighter_page(self, response):
         matches = response.css('#proResults,#amResults').css('li')
         fighter = {
-            'id': self.get_fighter_id_from_url(response.url),
+            'fighter_id': self.get_fighter_id_from_url(response.url),
             'name': self.get_fighter_attr(response, 'Name')
         }
         for match in matches:
@@ -41,7 +41,7 @@ class TapologySpider(SitemapSpider):
                 'result': 'loss' if result == 'win' else 'win'
             }
             yield FightItem(
-                id=match.xpath('@data-bout-id').get(),
+                event_id=match.xpath('@data-bout-id').get(),
                 event_id=self.get_event_id_from_url(match.xpath('//a[@title="Event Page"]/@href').get()),
                 division=match.xpath('@data-division').get(),
                 sport=match.xpath('@data-sport').get(),

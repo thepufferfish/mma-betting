@@ -7,6 +7,8 @@
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
+import os
+
 BOT_NAME = "tapology_scraper"
 
 SPIDER_MODULES = ['mma_betting.assets.extract.tapology_scraper.spiders']
@@ -68,9 +70,9 @@ ROTATING_PROXY_PAGE_RETRY_TIMES = 20
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    "tapology_scraper.pipelines.TapologyScraperPipeline": 300,
-#}
+ITEM_PIPELINES = {
+   'mma_betting.assets.extract.tapology_scraper.pipelines.MongoPipeline': 300,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
@@ -101,29 +103,5 @@ FEED_EXPORT_ENCODING = "utf-8"
 RETRY_ENABLED = True
 RETRY_TIMES = 10
 
-FEEDS = {
-    'events.jsonl': {
-        'format': 'jsonlines',
-        'encoding': 'utf8',
-        'store_empty': True,
-        'fields': None,
-        'indent': 4,
-        'item_export_kwargs': {
-            'export_empty_fields': True,
-        },
-        'overwrite': True,
-        'item_classes': ['mma_betting.assets.extract.tapology_scraper.items.EventItem'],
-    },
-    'fights.jsonl': {
-        'format': 'jsonlines',
-        'encoding': 'utf8',
-        'store_empty': True,
-        'fields': None,
-        'indent': 4,
-        'item_export_kwargs': {
-            'export_empty_fields': True,
-        },
-        'overwrite': True,
-        'item_classes': ['mma_betting.assets.extract.tapology_scraper.items.FightItem'],
-    },
-}
+MONGO_URI = os.environ['MONGO_URI']
+MONGO_DATABASE = os.environ['MONGO_DATABASE']

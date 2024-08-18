@@ -6,14 +6,14 @@
 import scrapy
 
 class EventItem(scrapy.Item):
-    id = scrapy.Field()
+    event_id = scrapy.Field()
     datetime = scrapy.Field()
     location = scrapy.Field()
     venue = scrapy.Field()
     promotion = scrapy.Field()
 
 class FightItem(scrapy.Item):
-    id = scrapy.Field()
+    fight_id = scrapy.Field()
     event_id = scrapy.Field()
     division = scrapy.Field()
     sport = scrapy.Field()

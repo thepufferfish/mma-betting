@@ -9,7 +9,8 @@ setup(
         "scrapy",
         "scrapy-user-agents",
         "scrapy-rotating-proxies",
-        "tenacity"
+        "tenacity",
+        "pymongo"
     ],
     extras_require={"dev": ["dagster-webserver", "pytest"]},
 )
