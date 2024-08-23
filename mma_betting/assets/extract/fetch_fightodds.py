@@ -13,8 +13,10 @@ def fetch_events_list_fightodds(context: AssetExecutionContext):
     events = api.fetch_events()
     for event in events:
         event_pk = str(event['node']['pk'])
-        context.log.debug(f'Adding event {event_pk} to fightodds events partitions')
-        context.instance.add_dynamic_partitions(fightodds_events_partitions_def.name, [event_pk])
+        existing_partitions = fightodds_events_partitions_def.get_partition_keys(dynamic_partitions_store=context.instance)
+        if not event_pk in existing_partitions:
+            context.log.debug(f'Adding event {event_pk} to fightodds events partitions')
+            context.instance.add_dynamic_partitions(fightodds_events_partitions_def.name, [event_pk])
     return events
 
 @asset(
@@ -35,7 +37,7 @@ def fetch_event_fights_fightodds(context: AssetExecutionContext):
             context.instance.add_dynamic_partitions(fightodds_fights_partitions_def.name, [fight_slug])
         return event_fights
     else:
-        context.log.info(f'No fights found for event {event_pk}')
+        context.log.warning(f'No fights found for event {event_pk}')
 
 @asset(
     key_prefix='fightodds',
