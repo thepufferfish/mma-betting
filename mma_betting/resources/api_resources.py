@@ -368,3 +368,7 @@ class UFCStatsAPIResource(ConfigurableResource):
         url = f'https://d29dxerjsp82wz.cloudfront.net/api/v3/fight/live/{fight_id}.json'
         return self.fetch_data(url)
     
+    def check_event_id(self, event_id):
+        event_data = self.fetch_event(event_id)
+        if event_data.get('LiveEventDetail'):
+            return True
