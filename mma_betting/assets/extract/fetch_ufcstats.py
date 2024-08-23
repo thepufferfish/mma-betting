@@ -6,7 +6,8 @@ api = UFCStatsAPIResource()
 
 @asset(
     key_prefix='ufc_stats',
-    partitions_def=ufc_events_partitions_def
+    partitions_def=ufc_events_partitions_def,
+    io_manager_key='mongo_io_manager'
 )
 def fetch_ufc_event(context: AssetExecutionContext):
     event_id = context.partition_key
@@ -17,14 +18,13 @@ def fetch_ufc_event(context: AssetExecutionContext):
         fight_id = fight['FightId']
         context.log.debug(f'Found fight {fight_id}. Adding to UFC fights partition')
         context.instance.add_dynamic_partitions(ufc_fights_partitions_def.name, [str(fight_id)])
-    return event_data
-
-
+    return event_data['LiveEventDetail']
 
 @asset(
     key_prefix='ufc_stats',
     partitions_def=ufc_fights_partitions_def,
-    deps=[fetch_ufc_event]
+    deps=[fetch_ufc_event],
+    io_manager_key='mongo_io_manager'
 )
 def fetch_ufc_fight(context: AssetExecutionContext):
     fight_id = context.partition_key

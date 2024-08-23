@@ -4,7 +4,10 @@ from mma_betting.partitions import fightodds_events_partitions_def, fightodds_fi
 
 api = FightOddsAPIResource()
 
-@asset(key_prefix='fightodds')
+@asset(
+    key_prefix='fightodds',
+    io_manager_key='mongo_io_manager'
+)
 def fetch_events_list_fightodds(context: AssetExecutionContext):
     context.log.debug('Fetching events list from fightodds.io API')
     events = api.fetch_events()
@@ -17,7 +20,8 @@ def fetch_events_list_fightodds(context: AssetExecutionContext):
 @asset(
     key_prefix='fightodds',
     partitions_def=fightodds_events_partitions_def,
-    deps=[fetch_events_list_fightodds]
+    deps=[fetch_events_list_fightodds],
+    io_manager_key='mongo_io_manager'
 )
 def fetch_event_fights_fightodds(context: AssetExecutionContext):
     event_pk = context.partition_key
@@ -36,7 +40,8 @@ def fetch_event_fights_fightodds(context: AssetExecutionContext):
 @asset(
     key_prefix='fightodds',
     partitions_def=fightodds_fights_partitions_def,
-    deps=[fetch_event_fights_fightodds]
+    deps=[fetch_event_fights_fightodds],
+    io_manager_key='mongo_io_manager'
 )
 def fetch_fight_odds(context: AssetExecutionContext):
     fight_slug = context.partition_key
@@ -47,7 +52,8 @@ def fetch_fight_odds(context: AssetExecutionContext):
 @asset(
     key_prefix='fightodds',
     partitions_def=fightodds_fights_partitions_def,
-    deps=[fetch_fight_odds]
+    deps=[fetch_fight_odds],
+    io_manager_key='mongo_io_manager'
 )
 def fetch_odds_history(context: AssetExecutionContext, fetch_fight_odds):
     all_history = []
