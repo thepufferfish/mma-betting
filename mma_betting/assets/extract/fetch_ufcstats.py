@@ -1,4 +1,4 @@
-from dagster import asset, AssetExecutionContext, DynamicOutput
+from dagster import asset, AssetExecutionContext, AssetDep, AllPartitionMapping
 from mma_betting.resources.api_resources import UFCStatsAPIResource
 from mma_betting.partitions import ufc_events_partitions_def, ufc_fights_partitions_def
 
@@ -23,7 +23,9 @@ def fetch_ufc_event(context: AssetExecutionContext):
 @asset(
     key_prefix='ufc_stats',
     partitions_def=ufc_fights_partitions_def,
-    deps=[fetch_ufc_event],
+    deps=[
+        AssetDep(fetch_ufc_event, partition_mapping=AllPartitionMapping())
+    ],
     io_manager_key='mongo_io_manager'
 )
 def fetch_ufc_fight(context: AssetExecutionContext):
