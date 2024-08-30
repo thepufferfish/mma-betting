@@ -11,6 +11,7 @@ class EventItem(scrapy.Item):
     location = scrapy.Field()
     venue = scrapy.Field()
     promotion = scrapy.Field()
+    urls = scrapy.Field()
 
 class FightItem(scrapy.Item):
     fight_id = scrapy.Field()
@@ -20,3 +21,4 @@ class FightItem(scrapy.Item):
     duration = scrapy.Field()
     weightclass = scrapy.Field()
     fighters = scrapy.Field()
+    url = scrapy.Field()

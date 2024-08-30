@@ -13,6 +13,10 @@ class TapologySpider(SitemapSpider):
         ('/fighters/', 'parse_fighter_page')
     ]
 
+    def __init__(self, *args, **kwargs):
+        super(TapologySpider, self).__init__(*args, **kwargs)
+        self.lastmod_cache = {}
+
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
         spider = super(TapologySpider, cls).from_crawler(crawler, *args, **kwargs)
@@ -32,17 +36,16 @@ class TapologySpider(SitemapSpider):
             if lastmod:
                 lastmod_date = datetime.strptime(lastmod, '%Y-%m-%d')
                 crawled_entry = collection.find_one({'url': url})
-                now_date = datetime.utcnow()
 
                 if crawled_entry:
                     if crawled_entry['lastmod'] < lastmod_date:
+                        self.lastmod_cache[url] = lastmod_date
                         yield entry
-                        collection.update_one({'url': url}, {'$set': {'lastmod': lastmod_date, 'last_crawled': now_date}})
                     else:
                         self.logger.debug(f'Skipping unchanged page: {url}')
                 else:
+                    self.lastmod_cache[url] = lastmod_date
                     yield entry
-                    collection.insert_one({'url': url, 'lastmod': lastmod_date, 'last_crawled': now_date})
             else:
                 # just going to follow but not record if no lastmod
                 # these are often just links to sitemap pages
@@ -51,13 +54,19 @@ class TapologySpider(SitemapSpider):
         client.close()
 
     def parse_event_page(self, response):
-        yield EventItem(
+        item = EventItem(
             event_id=self.get_event_id_from_url(response.url),
             datetime=self.get_event_detail(response, 'Date/Time'),
             location=self.get_event_detail(response, 'Location'),
             venue=self.get_event_detail(response, 'Venue'),
-            promotion=self.get_event_detail(response, 'Promotion')
+            promotion=self.get_event_detail(response, 'Promotion'),
+            url=response.url
         )
+
+        if item['event_id']:
+            self.record_successful_scrape(response.url)
+        
+        yield item
 
     def parse_fighter_page(self, response):
         matches = response.css('#proResults,#amResults').css('li')
@@ -71,23 +80,40 @@ class TapologySpider(SitemapSpider):
             opponent_info = match.css('.opponent .name a')
             opponent_href = opponent_info.xpath('@href').get()
             opponent_name = opponent_info.css('::text').get()
-            if result in ['unknown', 'cancelled'] or not result:
-                self.logger.debug(f'Weird result: {result} in match against {opponent_name}')
-                continue
             opponent = {
                 'fighter_id': self.get_fighter_id_from_url(opponent_href),
                 'name': opponent_name,
-                'result': 'loss' if result == 'win' else 'win'
+                'result': 'loss' if result == 'win' else 'win' if result == 'loss' else result
             }
-            yield FightItem(
+            item = FightItem(
                 fight_id=match.xpath('@data-bout-id').get(),
                 event_id=self.get_event_id_from_url(match.xpath('//a[@title="Event Page"]/@href').get()),
                 division=match.xpath('@data-division').get(),
                 sport=match.xpath('@data-sport').get(),
                 duration=self.get_fight_detail(match, 'Duration'),
                 weightclass=self.get_fight_detail(match, 'Weight'),
-                fighters=sorted([fighter, opponent], key=lambda x: x['fighter_id'])
+                fighters=sorted([fighter, opponent], key=lambda x: x['fighter_id']),
+                url=response.url
             )
+
+        if item['event_id']:
+            self.record_successful_scrape(response.url)
+        
+        yield item
+
+    def record_successful_scrape(self, url):
+        client = MongoClient(self.mongo_uri)
+        db = client[self.mongo_db]
+        collection = db['tapology_crawled_pages']
+
+        now_date = datetime.utcnow()
+        lastmod_date = self.lastmod_cache.get(url, now_date)
+
+        collection.update_one(
+            {'url': url},
+            {'$set': {'lastmod': lastmod_date, 'last_crawled': now_date}},
+            upsert=True
+        )
 
     def get_fighter_id_from_url(self, url):
         if url:
