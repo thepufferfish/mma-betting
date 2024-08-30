@@ -26,6 +26,7 @@ def fetch_events_list_fightodds(context: AssetExecutionContext):
     io_manager_key='mongo_io_manager'
 )
 def fetch_event_fights_fightodds(context: AssetExecutionContext):
+    existing_fight_partitions = fightodds_fights_partitions_def.get_partition_keys(dynamic_partitions_store=context.instance)
     event_pk = context.partition_key
     context.log.debug(f'Fetching data for event {event_pk} from fightodds.io API')
     event_fights = api.fetch_event_fights(event_pk)
@@ -33,8 +34,12 @@ def fetch_event_fights_fightodds(context: AssetExecutionContext):
     if fights:
         for fight in fights:
             fight_slug = str(fight['node']['slug'])
-            context.log.debug(f'Adding fight {fight_slug} to fightodds fights partitions')
-            context.instance.add_dynamic_partitions(fightodds_fights_partitions_def.name, [fight_slug])
+            existing_fight = fight_slug in existing_fight_partitions
+            if not existing_fight:
+                context.log.debug(f'Adding fight {fight_slug} to fightodds fights partitions')
+                context.instance.add_dynamic_partitions(fightodds_fights_partitions_def.name, [fight_slug])
+            else:
+                context.log.debug(f'Partition for {fight_slug} already exists')
         return event_fights['data']['event']
     else:
         context.log.warning(f'No fights found for event {event_pk}')
